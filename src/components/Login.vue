@@ -17,7 +17,7 @@
             prefix-icon="iconfont icon-3702mima"
           ></el-input>
         </el-form-item>
-        <el-form-item >
+        <el-form-item>
           <el-button type="primary" @click="login">登录</el-button>
           <el-button type="info" @click="resetForm">重置</el-button>
         </el-form-item>
@@ -35,19 +35,22 @@ export default {
     // 表单预验证
     login() {
       this.$refs.loginFormRef.validate(async valid => {
+        if (valid === false) {
+          console.log('aaaaaaaaaaaaaa')
+        }
         if (!valid) {
-          this.$message({
+          return this.$message({
             message: '表单信息有误，请重新填写',
             type: 'warning'
           })
-          return false
         }
         const { data: res } = await this.$http.post('login', this.loginForm)
-        if (res.meta.status !== 200) return
-        this.$message({
-          message: res.meta.msg,
-          type: 'warning'
-        })
+        if (res.meta.status !== 200) {
+          return this.$message({
+            message: res.meta.msg,
+            type: 'warning'
+          })
+        }
         window.sessionStorage.setItem('token', res.data.token)
         this.$router.push('/home')
       })
@@ -66,7 +69,8 @@ export default {
         ],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
-          { min: 6, max: 15, message: '长度在6到15位之间', trigger: 'blur' }]
+          { min: 6, max: 15, message: '长度在6到15位之间', trigger: 'blur' }
+        ]
       }
     }
   }
