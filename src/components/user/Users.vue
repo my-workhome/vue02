@@ -50,7 +50,12 @@
               ></el-button>
             </el-tooltip>
             <el-tooltip class="item" effect="dark" content="设置" placement="top" :enterable="false">
-              <el-button size="mini" type="warning" icon="el-icon-setting"></el-button>
+              <el-button
+                size="mini"
+                @click="setSoles(scope.row)"
+                type="warning"
+                icon="el-icon-setting"
+              ></el-button>
             </el-tooltip>
           </template>
         </el-table-column>
@@ -105,18 +110,40 @@
         <el-button type="primary" @click="editUserUp()">确 定</el-button>
       </span>
     </el-dialog>
+    <!-- 分配角色区 -->
+    <el-dialog title="分配角色" :visible.sync="setUserFlag" width="50%" @close="closeSetUser">
+      <div class="margin30">当前账户：{{setScope.username}}</div>
+      <div class="margin30">当前角色：{{setScope.role_name}}</div>
+      <div class="margin30">
+        分配角色：
+        <el-select v-model="checkRolesId" placeholder="请选择">
+          <el-option
+            v-for="item in rolesList"
+            :key="item.id"
+            :label="item.roleName"
+            :value="item.id"
+          ></el-option>
+        </el-select>
+      </div>
+      <el-button @click="setUserFlag=false">取 消</el-button>
+      <el-button type="primary" @click="setUserUp(setScope.id)">确 定</el-button>
+    </el-dialog>
   </div>
 </template>
 <script>
 export default {
   data() {
     return {
+      checkRolesId: '',
+      rolesList: [],
       userRule: { query: '', pagenum: 1, pagesize: 3 },
       searchMsg: '',
       userList: [],
       total: '',
+      setScope: {},
       addUserFlag: false,
       editUserFlag: false,
+      setUserFlag: false,
       addForm: { username: '', password: '', email: '', mobile: '' },
       editForm: {},
       rulesAddUser: {
@@ -137,6 +164,35 @@ export default {
     this.getUserList()
   },
   methods: {
+    // 打开分配角色窗口并渲染
+    async setSoles(scope) {
+      this.setScope = scope
+      const { data: res } = await this.$http.get('roles')
+      if (res.meta.status !== 200) {
+        return this.$message.error('获取角色列表失败')
+      }
+      this.rolesList = res.data
+      console.log(this.rolesList)
+      this.setUserFlag = true
+    },
+    // 保存分配角色结果
+    async setUserUp(userId) {
+      const { data: res } = await this.$http.put(`users/${userId}/role`, {
+        rid: this.checkRolesId
+      })
+      if (res.meta.status !== 200) {
+        this.checkRolesId = []
+        return this.$message.error('分配角色失败')
+      }
+      this.getUserList()
+      this.$message.success('分配角色成功')
+      this.setUserFlag = false
+      console.log(res)
+    },
+    // 关闭分配角色窗口
+    closeSetUser() {
+      this.checkRolesId = []
+    },
     addUser() {
       this.addUserFlag = true
     },
@@ -150,9 +206,12 @@ export default {
           type: 'warning'
         })
       }
+      if (res.data.users.length < 1) {
+        this.userRule.pagenum--
+        this.getUserList()
+      }
       this.userList = res.data.users
       this.total = res.data.total
-      console.log(this.user)
     },
     handleSizeChange(pagesize) {
       this.userRule.pagesize = pagesize
@@ -236,11 +295,11 @@ export default {
           center: true
         }
       ).catch(err => err)
-
       if (confirmCheck === 'confirm') {
         const { data: res } = await this.$http.delete(`users/${id}`)
         if (res.meta.status !== 200) return this.$message.error('删除失败')
         this.$message.success('删除成功')
+        console.log(this.userRule.pagenum)
         this.getUserList()
       } else {
         this.$message('用户取消了删除')
@@ -259,5 +318,8 @@ export default {
 }
 .el-pagination {
   margin-top: 20px;
+}
+.margin30 {
+  margin: 30px;
 }
 </style>
